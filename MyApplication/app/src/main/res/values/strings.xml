@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">My Application</string>
+
+    <string name="button1">Button1</string>
+
+    <string name="leftButton">Cancel</string>
+    <string name="middleButton">New folder</string>
+    <string name="rightButton">OK</string>
+</resources>
