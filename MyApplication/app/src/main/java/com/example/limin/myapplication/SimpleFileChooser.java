@@ -23,6 +23,7 @@ import android.widget.TextView;
 import java.io.File;
 import java.security.Key;
 import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Created by limin on 2016/5/21.
@@ -83,7 +84,15 @@ public class SimpleFileChooser extends DialogFragment {
                 holder.checkBox = (CheckBox)view.findViewById(R.id.checkbox);
 
                 File file = currentFileList.get(position);
+
                 holder.textView.setText(file.getName());
+                if (file.isDirectory()) {
+                    holder.imageView.setImageResource(R.drawable.folder);
+                    holder.checkBox.setVisibility(View.INVISIBLE);
+                } else {
+                    holder.imageView.setImageResource(R.drawable.file);
+                    holder.checkBox.setVisibility(View.VISIBLE);
+                }
 
                 return view;
             }
@@ -105,8 +114,11 @@ public class SimpleFileChooser extends DialogFragment {
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                currentFolder = currentFileList.get(position);
-                refreshListView();
+                File file = currentFileList.get(position);
+                if (file.isDirectory()) {
+                    currentFolder = file;
+                    refreshListView();
+                }
             }
         });
         listViewAdapter = new ListViewAdapter(getContext());
@@ -159,10 +171,11 @@ public class SimpleFileChooser extends DialogFragment {
                 return;
 
             for (File file: files) {
-                if (file.isDirectory())
+                if (file.isDirectory() || file.isFile())
                     currentFileList.add(file);
             }
 
+            Collections.sort(currentFileList);
             alertDialog.setTitle(currentFolder.getPath());
             listViewAdapter.notifyDataSetChanged();
         }
