@@ -18,18 +18,29 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        Button button1 = (Button)findViewById(R.id.button1);
-        button1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startListDialog();
-            }
-        });
     }
 
-    public void startListDialog() {
+    public void onClickFileSingle(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
-        dialog.show(getSupportFragmentManager(), "Folder");
+        dialog.show(getSupportFragmentManager(), "File Single");
+    }
+
+    public void onClickFileMulti(View view) {
+        SimpleFileChooser dialog = new SimpleFileChooser();
+        dialog.setSelectType(SimpleFileChooser.SELECT_TYPE.Multi);
+        dialog.show(getSupportFragmentManager(), "File Multi");
+    }
+
+    public void onClickFolderSingle(View view) {
+        SimpleFileChooser dialog = new SimpleFileChooser();
+        dialog.setOpenType(SimpleFileChooser.OPEN_TYPE.Folder);
+        dialog.show(getSupportFragmentManager(), "Folder Single");
+    }
+
+    public void onClickFolderMulti(View view) {
+        SimpleFileChooser dialog = new SimpleFileChooser();
+        dialog.setOpenType(SimpleFileChooser.OPEN_TYPE.Folder);
+        dialog.setSelectType(SimpleFileChooser.SELECT_TYPE.Multi);
+        dialog.show(getSupportFragmentManager(), "Folder Multi");
     }
 }

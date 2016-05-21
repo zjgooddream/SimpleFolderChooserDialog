@@ -1,9 +1,16 @@
 <resources>
     <string name="app_name">My Application</string>
 
-    <string name="button1">Button1</string>
+    <string name="button1">File Single</string>
+    <string name="button2">File Multi</string>
+    <string name="button3">Folder Single</string>
+    <string name="button4">Folder Multi</string>
 
-    <string name="leftButton">Cancel</string>
-    <string name="middleButton">New folder</string>
-    <string name="rightButton">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="createfolder">New folder</string>
+    <string name="ok">OK</string>
+
+    <string name="enter_new_folder">Enter new folder name</string>
+    <string name="folder_exists">Folder already exists</string>
+    <string name="failed_create_folder">Failed to create folder</string>
 </resources>
