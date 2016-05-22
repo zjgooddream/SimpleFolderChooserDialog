@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class MainActivity extends FragmentActivity {
 
@@ -22,18 +23,21 @@ public class MainActivity extends FragmentActivity {
 
     public void onClickFileSingle(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
+        dialog.setOnSelectCompleteListener(listener);
         dialog.show(getSupportFragmentManager(), "File Single");
     }
 
     public void onClickFileMulti(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
         dialog.setSelectType(SimpleFileChooser.SELECT_TYPE.Multi);
+        dialog.setOnSelectCompleteListener(listener);
         dialog.show(getSupportFragmentManager(), "File Multi");
     }
 
     public void onClickFolderSingle(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
         dialog.setOpenType(SimpleFileChooser.OPEN_TYPE.Folder);
+        dialog.setOnSelectCompleteListener(listener);
         dialog.show(getSupportFragmentManager(), "Folder Single");
     }
 
@@ -41,6 +45,19 @@ public class MainActivity extends FragmentActivity {
         SimpleFileChooser dialog = new SimpleFileChooser();
         dialog.setOpenType(SimpleFileChooser.OPEN_TYPE.Folder);
         dialog.setSelectType(SimpleFileChooser.SELECT_TYPE.Multi);
+        dialog.setOnSelectCompleteListener(listener);
         dialog.show(getSupportFragmentManager(), "Folder Multi");
     }
+
+    private SimpleFileChooser.OnSelectCompleteListener listener = new SimpleFileChooser.OnSelectCompleteListener() {
+        @Override
+        public void onSelectComplete(ArrayList<String> selctedFiles) {
+            String toastTip = "You selected :\n";
+            for (String str :
+                 selctedFiles) {
+                toastTip += str + "\n";
+            }
+            Toast.makeText(MainActivity.this, toastTip, Toast.LENGTH_SHORT).show();
+        }
+    };
 }

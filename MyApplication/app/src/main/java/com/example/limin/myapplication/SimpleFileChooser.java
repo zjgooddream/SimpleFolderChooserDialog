@@ -203,10 +203,10 @@ public class SimpleFileChooser extends DialogFragment {
                     public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
                         if (KeyEvent.KEYCODE_BACK == keyCode && KeyEvent.ACTION_UP == event.getAction()) {
                             if (currentFolder.equals(Environment.getExternalStorageDirectory())) {
-                                if (OPEN_TYPE.Folder == open_type)
-                                    return true;
-                                else if (OPEN_TYPE.File == open_type)
+                                if (OPEN_TYPE.File == open_type && SELECT_TYPE.Single == select_type)
                                     return false;
+                                else
+                                    return true;
                             }
 
                             currentFolder= currentFolder.getParentFile();
@@ -235,6 +235,8 @@ public class SimpleFileChooser extends DialogFragment {
                 b_positive.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        if (OPEN_TYPE.Folder == open_type && SELECT_TYPE.Single == select_type)
+                            selectedFiles.add(currentFolder.getAbsolutePath());
                         onSuccess();
                     }
                 });
