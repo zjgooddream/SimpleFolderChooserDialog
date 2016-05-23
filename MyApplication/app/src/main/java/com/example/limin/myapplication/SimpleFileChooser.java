@@ -1,19 +1,15 @@
 package com.example.limin.myapplication;
 
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
+import android.os.storage.StorageManager;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -22,23 +18,23 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.security.Key;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
 /**
- * Created by limin on 2016/5/21.
+ * Created by yyd on 2016/5/21.
  */
-public class SimpleFileChooser extends DialogFragment {
+public class SimpleFileChooser {
 
+    private Activity activity;
+    
     public enum SELECT_TYPE {
         Single,
         Multi
@@ -63,13 +59,19 @@ public class SimpleFileChooser extends DialogFragment {
 
     private OnSelectCompleteListener listener;
 
-    private int lastRadioButtonIndex = -1;
+    private ArrayList<String> selectedFiles = new ArrayList<String>();
 
-    private ArrayList<String> selectedFiles = new ArrayList<>();
+    private enum StorageType {
+        Internal,
+        External,
+        USB
+    }
 
-    private File currentFolder = Environment.getExternalStorageDirectory();
+    private int currentfolderDepth = 0;
 
-    private ArrayList<File> currentFileList = new ArrayList<>();
+    private File currentFolder = null;
+
+    private ArrayList<File> currentFileList = new ArrayList<File>();
 
     private ListViewAdapter listViewAdapter;
 
@@ -110,49 +112,76 @@ public class SimpleFileChooser extends DialogFragment {
         @Override
         public View getView(final int position, View convertView, ViewGroup parent) {
 
-            if (currentFileList.size() >  position) {
-                final File file = currentFileList.get(position);
+            ItemHolder holder = null;
 
+            if (null == convertView) {
+                holder = new ItemHolder();
                 LayoutInflater inflater = LayoutInflater.from(context);
-                View view = inflater.inflate(R.layout.file_list_item, null);
-                ItemHolder holder = new ItemHolder();
-                holder.imageView = (ImageView)view.findViewById(R.id.imageview);
-                holder.textView = (TextView)view.findViewById(R.id.textview);
-                holder.checkBox = (CheckBox)view.findViewById(R.id.checkbox);
+                convertView = inflater.inflate(R.layout.file_list_item, null);
 
-                holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        if (isChecked)
-                            selectedFiles.add(file.getAbsolutePath());
-                        else
-                            selectedFiles.remove(file.getAbsolutePath());
-                    }
-                });
+                holder.imageView = (ImageView)convertView.findViewById(R.id.imageview);
+                holder.textView = (TextView)convertView.findViewById(R.id.textview);
+                holder.checkBox = (CheckBox)convertView.findViewById(R.id.checkbox);
+
+                convertView.setTag(holder);
+
+            } else {
+                holder = (ItemHolder)convertView.getTag();
+            }
+
+            final File file = currentFileList.get(position);
+
+
+            holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    if (isChecked)
+                        selectedFiles.add(file.getAbsolutePath());
+                    else
+                        selectedFiles.remove(file.getAbsolutePath());
+                }
+            });
+
+            if (0 == currentfolderDepth) {
+
+                holder.checkBox.setVisibility(View.INVISIBLE);
+
+                StorageType type = StorageType.External;
+                if (file.equals(Environment.getExternalStorageDirectory()))
+                    type = StorageType.Internal;
+                else if(file.getAbsolutePath().toLowerCase().indexOf("usb") != -1)
+                    type = StorageType.USB;
+
+                if (StorageType.Internal == type) {
+                    holder.textView.setText(R.string.internalstorage);
+                    holder.imageView.setImageResource(R.drawable.internal);
+                }
+                else if (StorageType.External == type) {
+                    holder.textView.setText(R.string.externalstorage);
+                    holder.imageView.setImageResource(R.drawable.external);
+                }
+                else if (StorageType.USB == type) {
+                    holder.textView.setText(R.string.usbstorage);
+                    holder.imageView.setImageResource(R.drawable.usb);
+                }
+            } else {
 
                 holder.textView.setText(file.getName());
+
                 if (file.isDirectory()) {
                     holder.imageView.setImageResource(R.drawable.folder);
                 } else {
                     holder.imageView.setImageResource(R.drawable.file);
                 }
 
-                if (SELECT_TYPE.Single == select_type)
+                if (SELECT_TYPE.Single == select_type || (SELECT_TYPE.Multi == select_type && OPEN_TYPE.File == open_type && file.isDirectory() ) )
                     holder.checkBox.setVisibility(View.INVISIBLE);
-                else if (SELECT_TYPE.Multi == select_type) {
-                    if (OPEN_TYPE.File == open_type && file.isDirectory())
-                        holder.checkBox.setVisibility(View.INVISIBLE);
-                }
-
-                return view;
+                else
+                    holder.checkBox.setVisibility(View.VISIBLE);
             }
 
-            return null;
+            return convertView;
         }
-    }
-
-    public SimpleFileChooser() {
-        //do nothing
     }
 
     /**
@@ -175,18 +204,18 @@ public class SimpleFileChooser extends DialogFragment {
         this.listener = listener;
     }
 
-    @NonNull
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        ListView list = new ListView(getActivity());
+    public AlertDialog createDialog(Activity activity) {
+        
+        this.activity = activity;
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        ListView list = new ListView(activity);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 File file = currentFileList.get(position);
                 if (file.isDirectory()) {
-                    currentFolder = file;
-                    refreshListView();
+                    goToFolder(file);
                 } else if (file.isFile()) {
                     if (OPEN_TYPE.File == open_type && SELECT_TYPE.Single == select_type) {
                         selectedFiles.add(file.getAbsolutePath());
@@ -195,22 +224,21 @@ public class SimpleFileChooser extends DialogFragment {
                 }
             }
         });
-        listViewAdapter = new ListViewAdapter(getContext());
+        listViewAdapter = new ListViewAdapter(activity);
         list.setAdapter(listViewAdapter);
-        builder.setTitle(currentFolder.getPath()).setView(list)
+        builder.setView(list)
                 .setOnKeyListener(new DialogInterface.OnKeyListener() {
                     @Override
                     public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
                         if (KeyEvent.KEYCODE_BACK == keyCode && KeyEvent.ACTION_UP == event.getAction()) {
-                            if (currentFolder.equals(Environment.getExternalStorageDirectory())) {
+                            if (0 == currentfolderDepth) {
                                 if (OPEN_TYPE.File == open_type && SELECT_TYPE.Single == select_type)
                                     return false;
                                 else
                                     return true;
                             }
 
-                            currentFolder= currentFolder.getParentFile();
-                            refreshListView();
+                            onBack();
                             return true;
                         }
 
@@ -220,8 +248,8 @@ public class SimpleFileChooser extends DialogFragment {
 
         if (SELECT_TYPE.Multi == select_type ||
                 (SELECT_TYPE.Single == select_type && OPEN_TYPE.Folder == open_type)) {
-            builder.setPositiveButton(R.string.ok, null) // we set the listener in onShowListener, so we can prevent the dialog from closing (if chosen folder isn't writable)
-            .setNeutralButton(R.string.cancel, null); // we set the listener in onShowListener, so we can prevent the dialog from closing (if chosen folder isn't writable)
+            builder.setPositiveButton(android.R.string.ok, null) // we set the listener in onShowListener, so we can prevent the dialog from closing (if chosen folder isn't writable)
+            .setNeutralButton(android.R.string.cancel, null); // we set the listener in onShowListener, so we can prevent the dialog from closing (if chosen folder isn't writable)
             if (OPEN_TYPE.Folder == open_type)
                 builder.setNegativeButton(R.string.createfolder, null);
         }
@@ -256,12 +284,35 @@ public class SimpleFileChooser extends DialogFragment {
         return alertDialog;
     }
 
-    @Override
-    public void onCancel(DialogInterface dialog) {
-        super.onCancel(dialog);
+    public void show() {
+        alertDialog.show();
     }
 
-    private class FileComparator implements Comparator {
+    private void readVolumeState() {
+        StorageManager storageManager = (StorageManager)activity.getSystemService(Activity.STORAGE_SERVICE);
+
+        try {
+            Method method = storageManager.getClass().getMethod("getVolumePaths");
+            String[] paths = (String[])method.invoke(storageManager);
+
+            for (String string:
+                 paths) {
+                File file = new File(string);
+                if (file.isDirectory() && file.canRead()) {
+                    currentFileList.add(file);
+                }
+            }
+
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private class FileComparator implements Comparator<Object> {
 
         @Override
         public int compare(Object lhs, Object rhs) {
@@ -308,61 +359,63 @@ public class SimpleFileChooser extends DialogFragment {
     }
 
     private void refreshListView() {
-
-        if (null == currentFolder)
-            return;
-
         //1.clear last result
         currentFileList.clear();
 
         //2.get new list
-        File [] files = currentFolder.listFiles();
-        if (null != files) {
-            if (open_type == OPEN_TYPE.File) {
-                for (File file : files) {
-                    if (file.canRead())
-                        currentFileList.add(file);
-                }
-            } else if (open_type == OPEN_TYPE.Folder) {
-                for (File file : files) {
-                    if (file.isDirectory() && file.canRead())
-                        currentFileList.add(file);
+        if (0 == currentfolderDepth) {
+            //did not specify root directory
+            readVolumeState();
+            alertDialog.setTitle((OPEN_TYPE.File == open_type) ? R.string.filedialog : R.string.folderdialog);
+        } else {
+            File[] files = currentFolder.listFiles();
+            if (null != files) {
+                if (open_type == OPEN_TYPE.File) {
+                    for (File file : files) {
+                        if (file.canRead())
+                            currentFileList.add(file);
+                    }
+                } else if (open_type == OPEN_TYPE.Folder) {
+                    for (File file : files) {
+                        if (file.isDirectory() && file.canRead())
+                            currentFileList.add(file);
+                    }
                 }
             }
+
+            Collections.sort(currentFileList, new FileComparator());
+            alertDialog.setTitle(currentFolder.getPath());
         }
 
-        Collections.sort(currentFileList, new FileComparator());
-        alertDialog.setTitle(currentFolder.getPath());
         listViewAdapter.notifyDataSetChanged();
     }
 
     private void onSuccess() {
+        alertDialog.dismiss();
         if (null != listener) {
             listener.onSelectComplete(selectedFiles);
         }
-        alertDialog.dismiss();
     }
 
     private void onNewFolder() {
-        final EditText editText = new EditText(getContext());
+        final EditText editText = new EditText(activity);
         editText.setSingleLine();
 
-        new AlertDialog.Builder(getActivity())
+        new AlertDialog.Builder(activity)
                 .setTitle(R.string.enter_new_folder)
                 .setView(editText)
-                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String newFolder = currentFolder.getAbsolutePath() + "/" + editText.getText();
                         File newFile = new File(newFolder);
                         if (newFile.exists()) {
-                            Toast.makeText(getActivity(), R.string.folder_exists, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(activity, R.string.folder_exists, Toast.LENGTH_SHORT).show();
                         } else {
                             if (newFile.mkdirs()) {
-                                currentFolder = newFile;
-                                refreshListView();
+                                goToFolder(newFile);
                             } else {
-                                Toast.makeText(getActivity(), R.string.failed_create_folder, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(activity, R.string.failed_create_folder, Toast.LENGTH_SHORT).show();
                             }
                         }
                     }
@@ -371,4 +424,15 @@ public class SimpleFileChooser extends DialogFragment {
                 .create().show();
     }
 
+    private void onBack() {
+        currentfolderDepth--;
+        currentFolder = currentFolder.getParentFile();
+        refreshListView();
+    }
+
+    private void goToFolder(File file) {
+        currentfolderDepth++;
+        currentFolder = file;
+        refreshListView();
+    }
 }

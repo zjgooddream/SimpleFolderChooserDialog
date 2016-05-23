@@ -1,16 +1,11 @@
 package com.example.limin.myapplication;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.os.Environment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AppCompatActivity;
+
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
-import java.io.File;
 import java.util.ArrayList;
 
 public class MainActivity extends FragmentActivity {
@@ -24,21 +19,21 @@ public class MainActivity extends FragmentActivity {
     public void onClickFileSingle(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
         dialog.setOnSelectCompleteListener(listener);
-        dialog.show(getSupportFragmentManager(), "File Single");
+        dialog.show();
     }
 
     public void onClickFileMulti(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
         dialog.setSelectType(SimpleFileChooser.SELECT_TYPE.Multi);
         dialog.setOnSelectCompleteListener(listener);
-        dialog.show(getSupportFragmentManager(), "File Multi");
+        dialog.show();
     }
 
     public void onClickFolderSingle(View view) {
         SimpleFileChooser dialog = new SimpleFileChooser();
         dialog.setOpenType(SimpleFileChooser.OPEN_TYPE.Folder);
         dialog.setOnSelectCompleteListener(listener);
-        dialog.show(getSupportFragmentManager(), "Folder Single");
+        dialog.show();
     }
 
     public void onClickFolderMulti(View view) {
@@ -46,7 +41,7 @@ public class MainActivity extends FragmentActivity {
         dialog.setOpenType(SimpleFileChooser.OPEN_TYPE.Folder);
         dialog.setSelectType(SimpleFileChooser.SELECT_TYPE.Multi);
         dialog.setOnSelectCompleteListener(listener);
-        dialog.show(getSupportFragmentManager(), "Folder Multi");
+        dialog.show();
     }
 
     private SimpleFileChooser.OnSelectCompleteListener listener = new SimpleFileChooser.OnSelectCompleteListener() {
