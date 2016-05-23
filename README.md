@@ -9,9 +9,9 @@ features:
   select file/files
   select folder/folders
         
-  support Internal Storage
-  support External Storage
-  support USB Storage
+  support Internal Storage, External Storage, USB Storage
+  
+  
 How-to-use:
 
 ## File Single
